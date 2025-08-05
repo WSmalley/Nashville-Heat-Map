@@ -1,0 +1,39 @@
+# vacancy_map.py
+
+import pandas as pd
+import folium
+from folium.plugins import HeatMap
+
+# Load occupancy data
+occupancy_df = pd.read_csv("occupancy.csv", skiprows=3)
+
+# Calculate vacancy from Jun-25 occupancy value
+def extract_vacancy(occupancy_str):
+    try:
+        return max(0.0, 100.0 - float(str(occupancy_str).strip('%')))
+    except:
+        return 0.0
+
+occupancy_df['Vacancy'] = occupancy_df['Jun-25'].apply(extract_vacancy)
+
+# Prepare data for heatmap
+vacancy_df = occupancy_df[['Latitude', 'Longitude', 'Vacancy']].dropna()
+vacancy_heat_data = vacancy_df[['Latitude', 'Longitude', 'Vacancy']].values.tolist()
+
+# Create map
+vacancy_map = folium.Map(location=[36.1627, -86.7816], zoom_start=9)
+
+HeatMap(
+    data=vacancy_heat_data,
+    name='Vacancy Rate',
+    radius=35,
+    blur=25,
+    max_zoom=13,
+    opacity=0.5
+).add_to(vacancy_map)
+
+# Add layer control
+folium.LayerControl(collapsed=False).add_to(vacancy_map)
+
+# Save map
+vacancy_map.save("nashville_vacancy_map.html")
